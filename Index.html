@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سبک‌کال | تماس تصویری سبک</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Tahoma,sans-serif;background:#0f172a;color:#fff;min-height:100vh}
+header{padding:14px 16px;text-align:center;border-bottom:1px solid #1e293b}
+header b{font-size:18px}header span{color:#38bdf8}
+.wrap{max-width:480px;margin:0 auto;padding:20px 16px}
+.card{background:#1e293b;border-radius:16px;padding:20px}
+label{display:block;font-size:13px;margin:14px 0 6px;color:#cbd5e1}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;font-size:15px;font-family:inherit}
+input:focus{outline:none;border-color:#38bdf8}
+.row{display:flex;gap:8px;margin-top:16px}
+button{flex:1;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:14px;cursor:pointer}
+.primary{background:#38bdf8;color:#06202e;font-weight:bold}
+.ghost{background:#334155;color:#fff}
+.small{font-size:12px;color:#94a3b8;margin-top:12px;line-height:1.9}
+.recent{margin-top:16px}
+.recent-item{display:flex;justify-content:space-between;align-items:center;background:#0f172a;border:1px solid #334155;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:14px}
+.recent-item button{flex:none;padding:7px 12px;font-size:13px;background:#38bdf8;color:#06202e;border-radius:8px}
+#call-view{display:none;height:100vh;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:8px;padding:10px;background:#1e293b;font-size:14px}
+.topbar .dot{width:9px;height:9px;background:#22c55e;border-radius:50%}
+.topbar .sp{flex:1}
+.topbar button{flex:none;padding:8px 10px;font-size:13px;border-radius:8px;background:#334155;color:#fff}
+.topbar button.leave{background:#ef4444}
+#jitsi{flex:1;min-height:0;background:#000}
+.toolbar{display:flex;gap:6px;padding:10px;background:#1e293b;overflow-x:auto}
+.toolbar button{flex:1;white-space:nowrap;background:#334155;color:#fff;font-size:13px;padding:10px 6px;min-width:70px}
+.toolbar button.on{background:#38bdf8;color:#06202e}
+.hint{text-align:center;font-size:12px;color:#94a3b8;padding:6px}
+</style>
+</head>
+<body>
+<header><b>سبک‌کال <span>• تماس تصویری فوق‌سبک</span></b></header>
+
+<div id="home-view" class="wrap">
+<div class="card">
+<label>نام شما</label>
+<input id="myName" placeholder="مثلاً: سارا">
+<label>اسم گروه / اتاق</label>
+<input id="roomInput" placeholder="مثلاً: team-123">
+<div class="row">
+<button class="primary" onclick="join()">ورود به تماس</button>
+<button class="ghost" onclick="randomRoom()">ساخت خودکار</button>
+</div>
+<div class="small">• برای دعوت دیگران، بعد از ورود دکمه «کپی لینک دعوت» را بفرست.<br>• اسم اتاق انگلیسی باشد، با خط‌تیره. دوربین و میکروفون روی HTTPS کار می‌کند که هاست‌های رایگان دارند.<br>• چت، شیراسکرین و دوربین داخل صفحه تماس است.</div>
+<div class="recent" id="recent"></div>
+</div>
+</div>
+
+<div id="call-view">
+<div class="topbar">
+<div class="dot"></div>
+<div id="roomTitle">اتاق</div>
+<div style="font-size:12px;color:#94a3b8" id="count">۱ نفر</div>
+<div class="sp"></div>
+<button onclick="copyInvite()">کپی لینک دعوت</button>
+<button class="leave" onclick="leave()">خروج</button>
+</div>
+<div id="jitsi"></div>
+<div class="toolbar">
+<button onclick="cmd('toggleAudio',this)">میکروفون</button>
+<button onclick="cmd('toggleVideo',this)">دوربین</button>
+<button onclick="cmd('toggleShareScreen',this)">شیراسکرین</button>
+<button onclick="cmd('toggleChat',this)">چت</button>
+<button onclick="cmd('toggleTileView',this)">کاشی</button>
+</div>
+<div class="hint">چت و شیراسکرین از همین دکمه‌ها یا نوار پایین ویدیو در دسترس است</div>
+</div>
+
+<script src="https://meet.jit.si/external_api.js"></script>
+<script>
+let api=null, currentRoom='';
+function toFa(n){return n.toString().replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d])}
+function getName(){let v=document.getElementById('myName').value.trim();if(!v){v='مهمان-'+Math.floor(Math.random()*999);document.getElementById('myName').value=v;localStorage.setItem('sabok_name',v);}else{localStorage.setItem('sabok_name',v);}return v;}
+function safeRoom(r){r=r.trim().replace(/\s+/g,'-');let s=r.replace(/[^a-zA-Z0-9-_]/g,'');if(s.length<3){s='goroooh-'+Math.random().toString(36).slice(2,7);}return 'sabok-'+s.toLowerCase();}
+function randomRoom(){const r='goroooh-'+Math.random().toString(36).slice(2,7);document.getElementById('roomInput').value=r;}
+function join(roomFromLink){
+let raw=(roomFromLink||document.getElementById('roomInput').value||'').trim();
+if(!raw){alert('اول اسم گروه را بنویس');return;}
+currentRoom=safeRoom(raw);
+let display=raw;
+let name=getName();
+document.getElementById('home-view').style.display='none';
+document.getElementById('call-view').style.display='flex';
+document.getElementById('roomTitle').textContent=display;
+document.getElementById('jitsi').innerHTML='';
+api=new JitsiMeetExternalAPI('meet.jit.si',{
+roomName:currentRoom,
+parentNode:document.getElementById('jitsi'),
+userInfo:{displayName:name},
+configOverwrite:{prejoinPageEnabled:false,startWithAudioMuted:false,startWithVideoMuted:false,enableWelcomePage:false},
+interfaceConfigOverwrite:{SHOW_JITSI_WATERMARK:false,SHOW_POWERED_BY:false,MOBILE_APP_PROMO:false},
+width:'100%',height:'100%'
+});
+saveRecent(display,currentRoom);
+api.addListener('videoConferenceLeft',leave);
+api.addListener('participantJoined',updateCount);
+api.addListener('participantLeft',updateCount);
+api.addListener('videoConferenceJoined',updateCount);
+history.replaceState(null,'','?room='+encodeURIComponent(raw));
+}
+function updateCount(){if(!api)return;api.getNumberOfParticipants().then(n=>{document.getElementById('count').textContent=toFa(n+1)+' نفر';}).catch(()=>{});}
+function cmd(c,btn){if(!api)return;api.executeCommand(c);if(btn){btn.classList.toggle('on');}}
+function copyInvite(){let raw=document.getElementById('roomInput').value.trim()||currentRoom;let url=location.origin+location.pathname+'?room='+encodeURIComponent(raw);navigator.clipboard.writeText(url).then(()=>alert('لینک دعوت کپی شد:\n'+url));}
+function leave(){if(api){try{api.dispose();}catch(e){}api=null;}document.getElementById('call-view').style.display='none';document.getElementById('home-view').style.display='block';history.replaceState(null,'',location.pathname);renderRecent();}
+function saveRecent(display,id){let a=JSON.parse(localStorage.getItem('sabok_recent')||'[]');a=a.filter(x=>x.id!==id);a.unshift({display,id});a=a.slice(0,8);localStorage.setItem('sabok_recent',JSON.stringify(a));renderRecent();}
+function renderRecent(){let a=JSON.parse(localStorage.getItem('sabok_recent')||'[]');let box=document.getElementById('recent');if(!a.length){box.innerHTML='';return;}let h='<label style="margin:0">گروه‌های اخیر شما</label>';a.forEach(x=>{h+='<div class="recent-item"><span>'+x.display+'</span><button onclick="rejoin(\''+x.display+'\')">ورود</button></div>';});box.innerHTML=h;}
+function rejoin(d){document.getElementById('roomInput').value=d;join(d);}
+window.onload=function(){let n=localStorage.getItem('sabok_name');if(n)document.getElementById('myName').value=n;renderRecent();let p=new URLSearchParams(location.search).get('room');if(p){document.getElementById('roomInput').value=p;}}
+</script>
+</body>
+</html>
